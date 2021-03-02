@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <%- include('../partials/head.ejs')%>
+    </head>
+
+    <body>
+        <div class="container">
+            <h1 style="color:aliceblue">Ingrese producto</h1>
+            <form id="form" action="" enctype="application/x-www-form-urlencoded" onsubmit="return addProduct(this)">
+                <div class="form-group">
+                    <label for="title" style="color:aliceblue">Nombre: </label>
+                    <input type="text" class="form-control" placeholder="Nombre del producto" name="title" id="title">
+                </div>
+                <div class="form-group">
+                    <label for="price" style="color:aliceblue">Precio: </label>
+                    <input type="number" class="form-control" placeholder="Precio del producto" name="price" id="price">
+                </div>
+                <div class="form-group">
+                    <label for="thumbnail" style="color:aliceblue">Foto del producto: </label>
+                    <input type="text" class="form-control" placeholder="Link icono del producto" name="thumbnail" id="thumbnail">
+                </div>
+                <input type="submit" value="Enviar">
+            </form>
+
+            <hr>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Precio</th>
+                        <th>Foto</th>
+                    </tr>
+                </thead>
+                <tbody id="products">
+                    <% productos.forEach(function(producto){ %>
+                        <tr>
+                            <th scope="row"> <%= producto.id %> </th>
+                            <td><%= producto.title %></td>
+                            <td><%= producto.price %></td>
+                            <td> <img src="<%= producto.thumbnail %>"></td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+
+            <hr>
+
+            <h1 style="color:aliceblue">Centro de mensajes</h1>
+            <div class="messages" style= "color: brown" id="message-center">
+            </div>
+            <form id="form" action="" enctype="application/x-www-form-urlencoded" onsubmit="return addMessage(this)">
+                <input type="text" id="email" placeholder="Tu email">
+                <input type="text" id="message" placeholder="Dinos algo...">
+                <input type="submit" value="Enviar">
+            </form>
+
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            const socket = io();
+
+            let products = document.getElementById('products');
+
+            function addProduct(event){
+                let product = {
+                    title: document.getElementById('title').value,
+                    price: document.getElementById('price').value,
+                    thumbnail: document.getElementById('thumbnail').value
+                };
+
+                socket.emit('new-product', product);
+                return false;
+
+            }
+
+            function getFullDate(){
+                let date = new Date();
+
+                let d = date.getDate();
+                let mo = date.getMonth() + 1;
+                let y = date.getFullYear();
+                let h = date.getHours();
+                let mi = date.getMinutes();
+                let s = date.getSeconds();
+
+                return d + '/' + mo + '/' + y + ' ' + h + ':' + mi + ':' + s;
+            }
+
+            function addMessage(event) {
+                let today = getFullDate();
+
+                let mensaje = {
+                    email: document.getElementById('email').value,
+                    timestamp: today,
+                    message: document.getElementById('message').value
+                };
+
+                socket.emit('new-message', mensaje);
+                return false;
+            }
+
+            function renderProducts(data) {
+                var html = data.map(function(elem, index){
+                    return(`<tr>
+                            <th scope="row">${elem.id}%> </th>
+                            <td>${elem.title}</td>
+                            <td>${elem.price}</td>
+                            <td> <img src="${elem.thumbnail}"></td>
+                        </tr>`)
+                }).join(" ");
+                document.getElementById('products').innerHTML = html;
+            }
+
+            function renderMessages(data) {
+                var html = data.map(function(elem, index) {
+                    return(`<div>
+                                <strong style= "color: blue">${elem.email}</strong> [${elem.timestamp}]: <i style="color:green">${elem.message}</i> </br> 
+                            </div`)
+                }).join(" ");
+
+                document.getElementById('message-center').innerHTML = html;
+            }
+
+            socket.on('products', function(data) {
+                console.log(data);
+                renderProducts(data);
+            })
+
+            socket.on('messages', function(data) {
+                console.log(data);
+                renderMessages(data);
+            })
+
+            socket.on('mensaje-user', function(payload) {
+                console.log(payload)
+            })
+
+        </script>
+    </body>
+</html>
